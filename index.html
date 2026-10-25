@@ -4,6 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Konto">
 <title>Konto</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -40,12 +44,25 @@ select { font: inherit; padding: 8px 12px; min-height: 44px; border-radius: 10px
 .player { display: grid; gap: 12px; }
 .back { align-self: start; background: none; border: none; color: var(--accent); font: inherit; font-weight: 700; min-height: 44px; cursor: pointer; padding: 0; }
 .video { position: relative; width: 100%; aspect-ratio: 16/9; background: #000; border-radius: 12px; overflow: hidden; }
-.video > div, .video iframe { position: absolute; inset: 0; width: 100%; height: 100%; }
-.overlay { position: absolute; left: 0; right: 0; bottom: 6%; display: none; flex-direction: column; align-items: center; gap: 4px; pointer-events: none; padding: 0 5%; }
+.video > #yt, .video iframe { position: absolute; inset: 0; width: 100%; height: 100%; }
+.overlay { position: absolute; left: 0; right: 0; bottom: 6%; z-index: 2; display: none; flex-direction: column; justify-content: flex-end; align-items: center; gap: 4px; pointer-events: none; padding: 0 5%; }
 .overlay span { background: rgba(0,0,0,.66); color: #fff; padding: 4px 12px; border-radius: 8px; text-align: center; font-weight: 700; font-size: clamp(16px, 2.6vw, 30px); }
 .overlay span.ja { font-weight: 500; font-size: clamp(12px, 1.6vw, 18px); font-family: "Zen Kaku Gothic New", sans-serif; }
-.video.fs .overlay { display: flex; }
-.video.fs { border-radius: 0; }
+/* 全画面（横向き・⛶）：画面いっぱいに動画を広げ、字幕を重ねる */
+body.fs { overflow: hidden; }
+body.fs .video {
+  position: fixed; inset: 0; z-index: 1000;
+  width: 100vw; height: 100vh; height: 100dvh; aspect-ratio: auto;
+  border-radius: 0; background: #000;
+}
+body.fs .overlay { display: flex; bottom: max(4%, env(safe-area-inset-bottom, 0px)); }
+.exitfs { display: none; }
+body.fs .exitfs {
+  display: grid; place-items: center; position: fixed; z-index: 1001;
+  top: max(10px, env(safe-area-inset-top, 0px)); right: max(10px, env(safe-area-inset-right, 0px));
+  width: 44px; height: 44px; border-radius: 50%; border: none;
+  background: rgba(0,0,0,.5); color: #fff; font: 700 20px/1 sans-serif; cursor: pointer;
+}
 .sub { min-height: 112px; background: var(--surface); border-radius: 14px; padding: 14px 16px; }
 .sub .t { font-size: 20px; font-weight: 700; }
 .sub .ja { color: var(--muted); font-family: "Zen Kaku Gothic New", sans-serif; font-size: 14px; margin-top: 4px; }
@@ -75,7 +92,7 @@ button:focus-visible, select:focus-visible { outline: 3px solid var(--accent); o
 
   <section id="playerView" class="player" hidden>
     <button class="back" id="back">‹ <span id="backLabel"></span></button>
-    <div class="video" id="video"><div id="yt"></div><div class="overlay" id="overlay"><span id="oT"></span><span class="ja" id="oJ" hidden></span></div></div>
+    <div class="video" id="video"><button class="exitfs" id="exitfs" aria-label="Exit full screen">✕</button><div id="yt"></div><div class="overlay" id="overlay"><span id="oT"></span><span class="ja" id="oJ" hidden></span></div></div>
     <div class="sub"><div class="t" id="sT">&nbsp;</div><div class="ja" id="sJ" hidden></div></div>
     <div class="controls">
       <button id="m5" aria-label="-5 s">−5</button>
@@ -123,6 +140,7 @@ function renderList() {
 function open(s) {
   current = s;
   $("listView").hidden = true; $("playerView").hidden = false;
+  updateFs();
   $("backLabel").textContent = UI[lang].back;
   $("jaLabel").textContent = UI[lang].ja;
   $("showJa").checked = store.get("showJa", "0") === "1";
@@ -154,25 +172,35 @@ function show(c) {
   $("oJ").textContent = ja; $("oJ").hidden = !jaOn || !ja;
 }
 
-$("back").onclick = () => { clearInterval(timer); if (player) player.stopVideo(); $("playerView").hidden = true; $("listView").hidden = false; };
+$("back").onclick = () => { clearInterval(timer); if (player) player.stopVideo(); manualFs = false; $("playerView").hidden = true; $("listView").hidden = false; updateFs(); };
 $("pp").onclick = () => { if (!player) return; player.getPlayerState() === 1 ? player.pauseVideo() : player.playVideo(); };
 $("m5").onclick = () => player && player.seekTo(Math.max(0, player.getCurrentTime() - 5), true);
 $("p5").onclick = () => player && player.seekTo(player.getCurrentTime() + 5, true);
 $("showJa").onchange = e => { store.set("showJa", e.target.checked ? "1" : "0"); tick(); };
 $("lang").onchange = e => { lang = e.target.value; store.set("lang", lang); renderList(); };
+// 全画面：iPhone の Safari は動画以外を本物の全画面にできないので、画面いっぱいに広げる表示にする
+let manualFs = false;
+const landscape = window.matchMedia("(orientation: landscape) and (max-height: 520px)");
+function updateFs() {
+  const playing = !$("playerView").hidden;
+  const on = playing && (manualFs || landscape.matches);
+  document.body.classList.toggle("fs", on);
+  if (on) window.scrollTo(0, 0);
+}
+landscape.addEventListener ? landscape.addEventListener("change", updateFs) : landscape.addListener(updateFs);
+window.addEventListener("resize", updateFs);
 $("fs").onclick = async () => {
-  const v = $("video");
-  try {
-    if (document.fullscreenElement || document.webkitFullscreenElement) { await (document.exitFullscreen?.() || document.webkitExitFullscreen?.()); return; }
-    await (v.requestFullscreen?.() || v.webkitRequestFullscreen?.());
-    try { await screen.orientation.lock("landscape"); } catch {}
-  } catch {
-    v.classList.toggle("fs"); // フルスクリーンが使えない時（iPhone の Safari）は、字幕を動画に重ねるだけ
-  }
+  manualFs = true;
+  updateFs();
+  // パソコン・Android では本物の全画面にもする
+  try { await document.documentElement.requestFullscreen?.(); await screen.orientation?.lock?.("landscape"); } catch {}
 };
-const fsChange = () => $("video").classList.toggle("fs", !!(document.fullscreenElement || document.webkitFullscreenElement));
-document.addEventListener("fullscreenchange", fsChange);
-document.addEventListener("webkitfullscreenchange", fsChange);
+$("exitfs").onclick = async () => {
+  manualFs = false;
+  try { if (document.fullscreenElement) await document.exitFullscreen(); } catch {}
+  updateFs();
+};
+document.addEventListener("fullscreenchange", () => { if (!document.fullscreenElement && !landscape.matches) { manualFs = false; updateFs(); } });
 
 fetch("sketches.json").then(r => r.json()).then(d => { sketches = d; renderList(); });
 </script>
