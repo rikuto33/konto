@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Konto</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;700&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f4f1ee; --surface: #ffffff; --ink: #1d1a19; --muted: #6d6461; --line: #e2dcd8;
+  --accent: #c8281f; --accent-ink: #ffffff; --chip: #ece6e2;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #151312; --surface: #211e1c; --ink: #f2ece9; --muted: #a59b97; --line: #34302e; --accent: #e5483d; --accent-ink: #ffffff; --chip: #2b2725; color-scheme: dark; }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--bg); color: var(--ink);
+  font: 16px/1.5 "Atkinson Hyperlegible", "Helvetica Neue", Arial, sans-serif;
+  padding: env(safe-area-inset-top, 0px) 16px calc(24px + env(safe-area-inset-bottom, 0px));
+}
+.wrap { max-width: 760px; margin: 0 auto; }
+header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-block: 18px 12px; }
+.brand { display: flex; align-items: center; gap: 10px; }
+.mark { width: 40px; height: 40px; border-radius: 10px; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; font: 700 24px/1 "Zen Kaku Gothic New", sans-serif; }
+h1 { margin: 0; font-size: 24px; letter-spacing: 0.02em; }
+select { font: inherit; padding: 8px 12px; min-height: 44px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); }
+.list { display: grid; gap: 10px; padding: 0; margin: 0; list-style: none; }
+.item { display: flex; gap: 12px; align-items: center; background: var(--surface); border-radius: 14px; padding: 10px; cursor: pointer; border: 1px solid transparent; min-height: 44px; width: 100%; text-align: left; color: inherit; font: inherit; }
+.item:hover, .item:focus-visible { border-color: var(--accent); outline: none; }
+.item img { width: 112px; aspect-ratio: 16/9; object-fit: cover; border-radius: 8px; background: var(--chip); flex-shrink: 0; }
+.item b { display: block; }
+.item small { color: var(--muted); font-family: "Zen Kaku Gothic New", sans-serif; }
+.note { color: var(--muted); font-size: 13px; margin-top: 18px; }
+.player { display: grid; gap: 12px; }
+.back { align-self: start; background: none; border: none; color: var(--accent); font: inherit; font-weight: 700; min-height: 44px; cursor: pointer; padding: 0; }
+.video { position: relative; width: 100%; aspect-ratio: 16/9; background: #000; border-radius: 12px; overflow: hidden; }
+.video > div, .video iframe { position: absolute; inset: 0; width: 100%; height: 100%; }
+.overlay { position: absolute; left: 0; right: 0; bottom: 6%; display: none; flex-direction: column; align-items: center; gap: 4px; pointer-events: none; padding: 0 5%; }
+.overlay span { background: rgba(0,0,0,.66); color: #fff; padding: 4px 12px; border-radius: 8px; text-align: center; font-weight: 700; font-size: clamp(16px, 2.6vw, 30px); }
+.overlay span.ja { font-weight: 500; font-size: clamp(12px, 1.6vw, 18px); font-family: "Zen Kaku Gothic New", sans-serif; }
+.video.fs .overlay { display: flex; }
+.video.fs { border-radius: 0; }
+.sub { min-height: 112px; background: var(--surface); border-radius: 14px; padding: 14px 16px; }
+.sub .t { font-size: 20px; font-weight: 700; }
+.sub .ja { color: var(--muted); font-family: "Zen Kaku Gothic New", sans-serif; font-size: 14px; margin-top: 4px; }
+.controls { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.controls button { min-height: 50px; border-radius: 12px; border: none; background: var(--surface); color: var(--ink); font: 700 16px/1 inherit; cursor: pointer; }
+.controls button.primary { background: var(--accent); color: var(--accent-ink); }
+label.toggle { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; }
+label.toggle input { width: 22px; height: 22px; accent-color: var(--accent); }
+button:focus-visible, select:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand"><div class="mark" aria-hidden="true">笑</div><h1>Konto</h1></div>
+    <select id="lang" aria-label="Subtitles">
+      <option value="en">English</option>
+      <option value="fr">Français</option>
+      <option value="de">Deutsch</option>
+    </select>
+  </header>
+
+  <section id="listView">
+    <ul class="list" id="list"></ul>
+    <p class="note" id="note"></p>
+  </section>
+
+  <section id="playerView" class="player" hidden>
+    <button class="back" id="back">‹ <span id="backLabel"></span></button>
+    <div class="video" id="video"><div id="yt"></div><div class="overlay" id="overlay"><span id="oT"></span><span class="ja" id="oJ" hidden></span></div></div>
+    <div class="sub"><div class="t" id="sT">&nbsp;</div><div class="ja" id="sJ" hidden></div></div>
+    <div class="controls">
+      <button id="m5" aria-label="-5 s">−5</button>
+      <button id="pp" class="primary" aria-label="Play">▶</button>
+      <button id="p5" aria-label="+5 s">+5</button>
+      <button id="fs" aria-label="Full screen">⛶</button>
+    </div>
+    <label class="toggle"><span id="jaLabel"></span><input type="checkbox" id="showJa"></label>
+  </section>
+</div>
+
+<script src="https://www.youtube.com/iframe_api"></script>
+<script>
+const UI = {
+  en: { back: "All sketches", ja: "Show Japanese original", note: "Japanese comedy sketches with subtitles. Videos play from YouTube; all rights belong to the performers and their agencies." },
+  fr: { back: "Tous les sketchs", ja: "Afficher l’original japonais", note: "Des sketchs comiques japonais sous-titrés. Les vidéos sont lues depuis YouTube ; tous les droits appartiennent aux artistes et à leurs agences." },
+  de: { back: "Alle Sketche", ja: "Japanisches Original zeigen", note: "Japanische Comedy-Sketche mit Untertiteln. Die Videos laufen über YouTube; alle Rechte liegen bei den Künstlern und ihren Agenturen." },
+};
+const COL = { en: 3, fr: 4, de: 5 };
+const $ = id => document.getElementById(id);
+const store = { get(k, d) { try { return localStorage.getItem(k) ?? d; } catch { return d; } }, set(k, v) { try { localStorage.setItem(k, v); } catch {} } };
+let lang = store.get("lang", (navigator.language || "en").slice(0, 2));
+if (!COL[lang]) lang = "en";
+let sketches = [], current = null, player = null, timer = null, apiReady = false;
+
+window.onYouTubeIframeAPIReady = () => { apiReady = true; };
+
+function renderList() {
+  $("lang").value = lang;
+  $("note").textContent = UI[lang].note;
+  $("list").innerHTML = "";
+  for (const s of sketches) {
+    const li = document.createElement("li");
+    const b = document.createElement("button");
+    b.className = "item";
+    b.innerHTML = `<img alt="" loading="lazy" src="https://i.ytimg.com/vi/${s.id}/mqdefault.jpg"><span><b></b><small></small></span>`;
+    b.querySelector("b").textContent = s.title[lang] || s.title.ja;
+    b.querySelector("small").textContent = s.title.ja;
+    b.onclick = () => open(s);
+    li.appendChild(b);
+    $("list").appendChild(li);
+  }
+}
+
+function open(s) {
+  current = s;
+  $("listView").hidden = true; $("playerView").hidden = false;
+  $("backLabel").textContent = UI[lang].back;
+  $("jaLabel").textContent = UI[lang].ja;
+  $("showJa").checked = store.get("showJa", "0") === "1";
+  show(null);
+  const start = () => {
+    if (player) { player.loadVideoById(s.id); return; }
+    player = new YT.Player("yt", { videoId: s.id, playerVars: { playsinline: 1, fs: 0, rel: 0, modestbranding: 1, cc_load_policy: 0 },
+      events: { onStateChange: e => { $("pp").textContent = e.data === 1 ? "❚❚" : "▶"; } } });
+  };
+  apiReady ? start() : (window.onYouTubeIframeAPIReady = () => { apiReady = true; start(); });
+  clearInterval(timer);
+  timer = setInterval(tick, 100);
+  window.scrollTo(0, 0);
+}
+
+function tick() {
+  if (!player || !player.getCurrentTime || !current) return;
+  const t = player.getCurrentTime() - (current.offset || 0);
+  show(current.cues.find(c => c[0] <= t && t < c[1]) || null);
+}
+
+function show(c) {
+  const t = c ? (c[COL[lang]] || c[5]) : "";
+  const ja = c ? c[2] : "";
+  const jaOn = $("showJa").checked;
+  $("sT").textContent = t || " ";
+  $("sJ").textContent = ja; $("sJ").hidden = !jaOn;
+  $("oT").textContent = t; $("oT").style.visibility = t ? "visible" : "hidden";
+  $("oJ").textContent = ja; $("oJ").hidden = !jaOn || !ja;
+}
+
+$("back").onclick = () => { clearInterval(timer); if (player) player.stopVideo(); $("playerView").hidden = true; $("listView").hidden = false; };
+$("pp").onclick = () => { if (!player) return; player.getPlayerState() === 1 ? player.pauseVideo() : player.playVideo(); };
+$("m5").onclick = () => player && player.seekTo(Math.max(0, player.getCurrentTime() - 5), true);
+$("p5").onclick = () => player && player.seekTo(player.getCurrentTime() + 5, true);
+$("showJa").onchange = e => { store.set("showJa", e.target.checked ? "1" : "0"); tick(); };
+$("lang").onchange = e => { lang = e.target.value; store.set("lang", lang); renderList(); };
+$("fs").onclick = async () => {
+  const v = $("video");
+  try {
+    if (document.fullscreenElement || document.webkitFullscreenElement) { await (document.exitFullscreen?.() || document.webkitExitFullscreen?.()); return; }
+    await (v.requestFullscreen?.() || v.webkitRequestFullscreen?.());
+    try { await screen.orientation.lock("landscape"); } catch {}
+  } catch {
+    v.classList.toggle("fs"); // フルスクリーンが使えない時（iPhone の Safari）は、字幕を動画に重ねるだけ
+  }
+};
+const fsChange = () => $("video").classList.toggle("fs", !!(document.fullscreenElement || document.webkitFullscreenElement));
+document.addEventListener("fullscreenchange", fsChange);
+document.addEventListener("webkitfullscreenchange", fsChange);
+
+fetch("sketches.json").then(r => r.json()).then(d => { sketches = d; renderList(); });
+</script>
+</body>
+</html>
